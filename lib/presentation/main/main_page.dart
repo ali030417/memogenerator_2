@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
-import 'package:memogenerator/pages/create_meme_page.dart.dart';
+import 'package:memogenerator/presentation/create_meme/create_meme_page.dart';
 import 'package:memogenerator/resources/app_colors.dart';
 import 'package:provider/provider.dart';
-import '../blocs/main_bloc.dart';
+import '../../data/model/meme.dart';
+import 'main_bloc.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -35,10 +36,16 @@ class _MainPageState extends State<MainPage> {
               style: GoogleFonts.seymourOne(fontSize: 24)),
         ),
         floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {
+          onPressed: () async {
+            final selectedMemePath = await bloc.selectMeme();
+            if (selectedMemePath == null) {
+              return;
+            }
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => CreateMemePage(),
+                builder: (_) => CreateMemePage(
+                  selectedMemePath: selectedMemePath,
+                ),
               ),
             );
           },
@@ -75,8 +82,34 @@ class _MainPageContantState extends State<MainPageContant> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(),
+    final bloc = Provider.of<MainBloc>(context, listen: false);
+    return StreamBuilder(
+      stream: bloc.observeMemes(),
+      initialData: const <Meme>[],
+      builder: (context, snapshot) {
+        final items = snapshot.hasData ? snapshot.data! : const <Meme>[];
+        return ListView(
+          children: items.map((item) {
+            return GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) {
+                      return CreateMemePage(id: item.id);
+                    },
+                  ),
+                );
+              },
+              child: Container(
+                height: 48,
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                alignment: Alignment.centerLeft,
+                child: Text(item.id),
+              ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 
